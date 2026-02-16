@@ -1,3 +1,11 @@
+
+## Development
+Start the project for development purposes with
+```shell
+npm run dev
+```
+
+
 ## Class structure
 
 Terrain: the cells of the map
