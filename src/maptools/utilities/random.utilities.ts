@@ -30,6 +30,9 @@ export class RandomUtilities {
      *     console.log(Math.trunc(rnd.next(10)));
      * }
      * // out: 5 1 7 3 9
+     *
+     * @note
+     * Generation is inspired by this document: https://math.arizona.edu/~tgk/mc/book_chap3.pdf
      */
     next(multiplier: number = 1) {
         this.n++;
