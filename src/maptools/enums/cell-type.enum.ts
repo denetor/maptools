@@ -1,6 +1,6 @@
 export enum CellType {
+    Void = 'void',
     Grass = 'grass',
-    Desert = 'desert',
     Sea = 'sea',
     Hill = 'hill',
     Mountain = 'mountain',

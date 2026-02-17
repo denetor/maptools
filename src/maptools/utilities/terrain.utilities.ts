@@ -1,4 +1,5 @@
 import {Terrain} from "../models/terrain.model";
+import {CellType} from "../enums/cell-type.enum";
 
 export class TerrainUtilities {
 
@@ -20,16 +21,36 @@ export class TerrainUtilities {
                 const cell = terrain.cells[y * terrain.width + x];
                 if (!cell) return ' ';
                 switch (cell.type) {
-                    case 'grass': s += '_'; break;
-                    case 'sea': s += '~'; break;
-                    case 'mountain': s += 'M'; break;
-                    case 'desert': s += 'D'; break;
-                    case "hill": s += 'H'; break;
-                    default: s += ' ';
+                    case CellType.Grass: s += '--'; break;
+                    case CellType.Sea: s += '~~'; break;
+                    case CellType.Mountain: s += '/\\'; break;
+                    case CellType.Hill: s += '=='; break;
+                    default: s += '  ';
                 }
             }
         }
 
+        return s;
+    }
+
+
+    /**
+     * Converts a flat array representing a matrix into a formatted string.
+     *
+     * @param {number[]} values - The flat array containing the matrix elements.
+     * @param {number} width - The number of columns in the matrix.
+     * @param {number} height - The number of rows in the matrix.
+     * @return {string} A string representation of the matrix with rows separated by newlines.
+     */
+    static matrixToString(values: number[], width: number, height: number): string {
+        let s = '';
+        for (let y = 0; y < height; y++) {
+            if (s.length > 0) s += "\n";
+            for (let x = 0; x < width; x++) {
+                const cell = values[y * width + x];
+                s += cell + ' ';
+            }
+        }
         return s;
     }
 }

@@ -1,4 +1,5 @@
 import {Cell} from "./cell.model";
+import {TerrainGenerationRule} from "./terrain-generation-rule.model";
 
 export class Terrain {
     width: number;
@@ -11,4 +12,7 @@ export class Terrain {
         this.height = config?.height ?? 0;
         this.cells = config?.cells ?? [];
     }
+
+
+
 }
