@@ -2,11 +2,12 @@ import {TerrainGeneratorService} from "./maptools/services/terrain-generator.ser
 import {TerrainUtilities} from "./maptools/utilities/terrain.utilities";
 import {RandomUtilities} from "./maptools/utilities/random.utilities";
 
-// const t = TerrainGeneratorService.generate();
-// console.log(TerrainUtilities.toString(t));
+// test terrain generator
+const t = TerrainGeneratorService.generate({width: 10, height: 5, seed: 74625, strategy: 'basic'});
+console.log(TerrainUtilities.toString(t));
 
-
-const rnd = new RandomUtilities(74625);
-for (let i = 0; i < 5; i++) {
-    console.log(Math.trunc(rnd.next(10)));
-}
+// test random function
+// const rnd = new RandomUtilities(74625);
+// for (let i = 0; i < 5; i++) {
+//     console.log(rnd.next());
+// }

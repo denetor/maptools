@@ -1,5 +1,7 @@
 import {Terrain} from "../models/terrain.model";
 import {Cell} from "../models/cell.model";
+import {CellType} from "../enums/cell-type.enum";
+import {WfcService} from "./wfc.service";
 
 export class TerrainGeneratorService {
 
@@ -14,11 +16,14 @@ export class TerrainGeneratorService {
      * @return {Terrain} The generated terrain instance.
      */
     static generate(config: any = {}): Terrain {
+        const wfcService = new WfcService();
         const terrain = new Terrain({
             width: config?.width ?? 10,
             height: config?.height ?? 10,
         });
         switch (config?.strategy) {
+            case 'basic':
+                wfcService.generateWithBasicStrategy(terrain, config.seed);
             default:
                 this.generateCellsWithFlatStrategy(terrain);
         }
@@ -37,7 +42,7 @@ export class TerrainGeneratorService {
     static generateCellsWithFlatStrategy(terrain: Terrain) {
         for (let y = 0; y < terrain.height; y++) {
             for (let x = 0; x < terrain.width; x++) {
-                terrain.cells.push(new Cell({x, y, type: 'grass'}));
+                terrain.cells.push(new Cell({x, y, type: CellType.Grass}));
             }
         }
     }

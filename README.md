@@ -2,6 +2,7 @@
 ## Development
 Start the project for development purposes with
 ```shell
+nvm use 24
 npm run dev
 ```
 
