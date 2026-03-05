@@ -139,10 +139,13 @@ export class WfcService {
         // place a random cell
         cells[y * terrain.width + x].type = rnd.nextEnum(CellType);
         // TODO while map incomplete and map not stuck
-            // TODO calculate entropy map for each cell
+            // calculate entropy map for each cell
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
-            // console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
-            // TODO find empty cell with least entropy
+            console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
+            // find empty cell with least entropy
+            const leastEntropyCell: {x: number, y: number, entropy: number} =
+                this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap);
+            console.log(leastEntropyCell);
             // TODO find adyacent cells of the selected empty cell
             // TODO chose the cell type, basing on rules
             // TODO if map is stuck, restart from the beginning
@@ -184,5 +187,36 @@ export class WfcService {
         }
 
         return entropyMap;
+    }
+
+
+    /**
+     * Identifies and returns the coordinates of the cell with the least entropy in the provided entropy map.
+     *
+     * @param {number} width The width of the entropy map.
+     * @param {number} height The height of the entropy map.
+     * @param {number[]} entropyMap A flat array representing the entropy values of each cell in a grid of size width x height.
+     * @return {{x: number, y: number}} An object containing the x and y coordinates of the cell with the least entropy.
+     * @throws {Error} Throws an error if a cell with entropy of 0 is encountered, indicating that the map is stuck.
+     */
+    getLeastEntropyCell(width: number, height: number, entropyMap: number[]): {x: number, y: number, entropy: number} {
+        const leastEntropy: {x: number, y: number, entropy: number} = {x: 0, y: 0, entropy: 9};
+        // for each map cell
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (entropyMap[y * width + x] < leastEntropy.entropy) {
+                    leastEntropy.x = x;
+                    leastEntropy.y = y;
+                    leastEntropy.entropy = entropyMap[y * width + x];
+                }
+                if (leastEntropy.entropy === 1) {
+                    return leastEntropy;
+                } else if (leastEntropy.entropy === 0) {
+                    throw new Error('Map is stuck');
+                }
+            }
+        }
+
+        return leastEntropy;
     }
 }
