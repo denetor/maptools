@@ -143,8 +143,8 @@ export class WfcService {
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
             console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
             // find empty cell with least entropy
-            const leastEntropyCell: {x: number, y: number, entropy: number} =
-                this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap);
+            const leastEntropyCell: {x: number, y: number, entropy: number, cell: Cell} =
+                this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
             console.log(leastEntropyCell);
             // TODO find adyacent cells of the selected empty cell
             // TODO chose the cell type, basing on rules
@@ -191,23 +191,26 @@ export class WfcService {
 
 
     /**
-     * Identifies and returns the coordinates of the cell with the least entropy in the provided entropy map.
+     * Identifies the cell with the lowest entropy value within a given grid, based on an entropy map.
+     * If the entropy reaches `0`, it throws an error indicating that the map is stuck.
+     * If the entropy value is `1`, it exits early and returns the corresponding cell.
      *
-     * @param {number} width The width of the entropy map.
-     * @param {number} height The height of the entropy map.
-     * @param {number[]} entropyMap A flat array representing the entropy values of each cell in a grid of size width x height.
-     * @return {{x: number, y: number}} An object containing the x and y coordinates of the cell with the least entropy.
-     * @throws {Error} Throws an error if a cell with entropy of 0 is encountered, indicating that the map is stuck.
+     * @param width The width of the grid.
+     * @param height The height of the grid.
+     * @param entropyMap An array where each index corresponds to the entropy of a cell at that position.
+     * @param cells An array of `Cell` objects representing the grid structure.
+     * @return An object containing the `x` and `y` coordinates, `entropy` value, and the `Cell` object of the cell with the least entropy.
      */
-    getLeastEntropyCell(width: number, height: number, entropyMap: number[]): {x: number, y: number, entropy: number} {
-        const leastEntropy: {x: number, y: number, entropy: number} = {x: 0, y: 0, entropy: 9};
-        // for each map cell
+    getLeastEntropyCell(width: number, height: number, entropyMap: number[], cells: Cell[]): {x: number, y: number, entropy: number, cell: Cell} {
+        const leastEntropy: {x: number, y: number, entropy: number, cell: Cell} = {x: 0, y: 0, entropy: 9, cell: cells[0]};
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                if (entropyMap[y * width + x] < leastEntropy.entropy) {
+                const cellIndex = y * width + x;
+                if (cells[cellIndex].type === CellType.Void && entropyMap[cellIndex] < leastEntropy.entropy) {
                     leastEntropy.x = x;
                     leastEntropy.y = y;
-                    leastEntropy.entropy = entropyMap[y * width + x];
+                    leastEntropy.entropy = entropyMap[cellIndex];
+                    leastEntropy.cell = cells[cellIndex];
                 }
                 if (leastEntropy.entropy === 1) {
                     return leastEntropy;
