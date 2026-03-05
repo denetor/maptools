@@ -143,12 +143,21 @@ export class WfcService {
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
             console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
             // find empty cell with least entropy
-            const leastEntropyCell: {x: number, y: number, entropy: number, cell: Cell} =
-                this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
-            console.log(leastEntropyCell);
-            // TODO find adyacent cells of the selected empty cell
-            // TODO chose the cell type, basing on rules
-            // TODO if map is stuck, restart from the beginning
+            let leastEntropyCell: { x: number, y: number, entropy: number, cell: Cell } = null as any;
+            try {
+                leastEntropyCell = this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
+                console.log(leastEntropyCell);
+            } catch (e) {
+                console.log('Exception caught: map is stuck');
+            }
+            if (leastEntropyCell && leastEntropyCell.entropy > 0) {
+                // find adyacent cells of the selected empty cell
+                const adjacentCells: { up: Cell, right: Cell, down: Cell, left: Cell } =
+                    this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
+                console.log(adjacentCells);
+                // TODO chose the cell type, basing on rules
+                // TODO if map is stuck, restart from the beginning
+            }
         // copy terrain matrix in terrain cells
         terrain.cells = cells;
     }
@@ -221,5 +230,36 @@ export class WfcService {
         }
 
         return leastEntropy;
+    }
+
+
+    /**
+     * Retrieves the adjacent cells of a given cell in a grid based on its position.
+     *
+     * @param {number} x The x-coordinate of the target cell in the grid.
+     * @param {number} y The y-coordinate of the target cell in the grid.
+     * @param {number} width The total width of the grid (number of columns).
+     * @param {number} height The total height of the grid (number of rows).
+     * @param {Cell[]} cells An array representing all cells in the grid.
+     * @return {{up: Cell, right: Cell, down: Cell, left: Cell}} An object containing the adjacent cells (`up`, `right`, `down`, `left`). Missing directions will not be included if the cell is on a boundary or edge.
+     */
+    getAdjacentCells(x: number, y: number, width: number, height: number, cells: Cell[]): {up: Cell, right: Cell, down: Cell, left: Cell} {
+        const adyacentCells: {up: Cell, right: Cell, down: Cell, left: Cell} = {up: null, right: null, down: null, left: null} as any;
+        const cellOffset = y * width + x;
+        console.log({cellOffset});
+        if (y > 0 && cellOffset > width - 1) {
+            adyacentCells.up = cells[cellOffset - width];
+        }
+        if (x < width - 1 && cellOffset < cells.length - 1) {
+            adyacentCells.right = cells[cellOffset + 1];
+        }
+        if (y < height - 1 && cellOffset < cells.length - width) {
+            adyacentCells.down = cells[cellOffset + width];
+        }
+        if (x > 0 && cellOffset > 0) {
+            adyacentCells.left = cells[cellOffset - 1];
+        }
+
+        return adyacentCells;
     }
 }
