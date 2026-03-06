@@ -156,6 +156,7 @@ export class WfcService {
                     this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
                 console.log(adjacentCells);
                 // TODO chose the cell type, basing on rules
+                const newCell: Cell = this.getCellFromRules(leastEntropyCell, adjacentCells, cells, terrain.width, terrain.height);
                 // TODO if map is stuck, restart from the beginning
             }
         // copy terrain matrix in terrain cells
@@ -261,5 +262,15 @@ export class WfcService {
         }
 
         return adyacentCells;
+    }
+
+
+
+    getCellFromRules(leastEntropyCell, adjacentCells, cells: Cell[], width: number, height: number): Cell {
+        let cell: Cell = null as any;
+        // TODO for each adjacent cell
+            // TODO
+
+        return cell;
     }
 }
