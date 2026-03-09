@@ -6,6 +6,29 @@ import {TerrainGenerationRule} from "../models/terrain-generation-rule.model";
 import {MapUtilities} from "../utilities/map.utilities";
 import {TerrainUtilities} from "../utilities/terrain.utilities";
 
+
+class LeastEntropyCell {
+    x: number;
+    y: number;
+    entropy: number;
+    cell: Cell;
+}
+
+
+class AdjacentCells {
+    up: Cell;
+    right: Cell;
+    down: Cell;
+    left: Cell;
+}
+
+
+class WFCCellRule {
+    cellType: CellType;
+    probability: number;
+}
+
+
 export class WfcService {
     generationRules: TerrainGenerationRule[];
 
@@ -68,26 +91,22 @@ export class WfcService {
                 up: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.24},
-                    { cellType: CellType.Sea, probability: 0.01},
+                    { cellType: CellType.Mountain, probability: 0.25},
                 ],
                 right: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.24},
-                    { cellType: CellType.Sea, probability: 0.01},
+                    { cellType: CellType.Mountain, probability: 0.25},
                 ],
                 down: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.24},
-                    { cellType: CellType.Sea, probability: 0.01},
+                    { cellType: CellType.Mountain, probability: 0.25},
                 ],
                 left: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.24},
-                    { cellType: CellType.Sea, probability: 0.01},
+                    { cellType: CellType.Mountain, probability: 0.25},
                 ],
             }),
             new TerrainGenerationRule({
@@ -143,7 +162,7 @@ export class WfcService {
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
             console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
             // find empty cell with least entropy
-            let leastEntropyCell: { x: number, y: number, entropy: number, cell: Cell } = null as any;
+            let leastEntropyCell: LeastEntropyCell = null as any;
             try {
                 leastEntropyCell = this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
                 console.log(leastEntropyCell);
@@ -152,8 +171,7 @@ export class WfcService {
             }
             if (leastEntropyCell && leastEntropyCell.entropy > 0) {
                 // find adyacent cells of the selected empty cell
-                const adjacentCells: { up: Cell, right: Cell, down: Cell, left: Cell } =
-                    this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
+                const adjacentCells: AdjacentCells = this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
                 console.log(adjacentCells);
                 // TODO chose the cell type, basing on rules
                 const newCell: Cell = this.getCellFromRules(leastEntropyCell, adjacentCells, cells, terrain.width, terrain.height);
@@ -211,7 +229,7 @@ export class WfcService {
      * @param cells An array of `Cell` objects representing the grid structure.
      * @return An object containing the `x` and `y` coordinates, `entropy` value, and the `Cell` object of the cell with the least entropy.
      */
-    getLeastEntropyCell(width: number, height: number, entropyMap: number[], cells: Cell[]): {x: number, y: number, entropy: number, cell: Cell} {
+    getLeastEntropyCell(width: number, height: number, entropyMap: number[], cells: Cell[]): LeastEntropyCell {
         const leastEntropy: {x: number, y: number, entropy: number, cell: Cell} = {x: 0, y: 0, entropy: 9, cell: cells[0]};
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
@@ -244,8 +262,8 @@ export class WfcService {
      * @param {Cell[]} cells An array representing all cells in the grid.
      * @return {{up: Cell, right: Cell, down: Cell, left: Cell}} An object containing the adjacent cells (`up`, `right`, `down`, `left`). Missing directions will not be included if the cell is on a boundary or edge.
      */
-    getAdjacentCells(x: number, y: number, width: number, height: number, cells: Cell[]): {up: Cell, right: Cell, down: Cell, left: Cell} {
-        const adyacentCells: {up: Cell, right: Cell, down: Cell, left: Cell} = {up: null, right: null, down: null, left: null} as any;
+    getAdjacentCells(x: number, y: number, width: number, height: number, cells: Cell[]): AdjacentCells {
+        const adyacentCells: AdjacentCells = {up: null, right: null, down: null, left: null} as any;
         const cellOffset = y * width + x;
         console.log({cellOffset});
         if (y > 0 && cellOffset > width - 1) {
@@ -266,11 +284,64 @@ export class WfcService {
 
 
 
-    getCellFromRules(leastEntropyCell, adjacentCells, cells: Cell[], width: number, height: number): Cell {
+    getCellFromRules(leastEntropyCell: LeastEntropyCell, adjacentCells: AdjacentCells, cells: Cell[], width: number, height: number): Cell {
         let cell: Cell = null as any;
-        // TODO for each adjacent cell
-            // TODO
+        let intersectionRules: WFCCellRule[] = [];
+        let pristine: boolean = true;
+        // for each adajcent cell
+        for (const key in adjacentCells) {
+            const adjacentCell: Cell = adjacentCells[key];
+            // if adjacent cell is not null
+            if (adjacentCell && adjacentCell.cellType != CellType.Void) {
+                // list all rules toward the leastEntropyCell
+                let adjacentRules: WFCCellRule[] = this.getRulesToAdjacentCell(adjacentCell, key);
+                if (intersectionRules.length === 0) {
+                    if (pristine) {
+                        // copy all rules to intersectionRules
+                        intersectionRules = adjacentRules;
+                        pristine = false;
+                    } else {
+                        // TODO remove from intersectionRules all rules not in the rules just read
+                    }
+                }
+            }
+        }
+        if (intersectionRules.length > 0) {
+            // TODO select a weighted random rule from intersectionRules and return the cell type
+        } else {
+            // return void cell: map generation is stuck :-(
+            cell = new Cell({x: leastEntropyCell.x, y: leastEntropyCell.y, type: CellType.Void});
+        }
 
         return cell;
     }
+
+
+    /**
+     * Retrieves applicable rules for an adjacent cell based on its type and the specified direction.
+     *
+     * @param {Cell} adjacentCell - The adjacent cell whose rules need to be evaluated.
+     * @param {string} direction - The relative direction ('up', 'right', 'down', 'left') from the current cell.
+     * @return {Array} An array of rules applicable to the adjacent cell in the specified direction. Returns an empty array if no rules match.
+     */
+    getRulesToAdjacentCell(adjacentCell: Cell, direction: string) {
+        const rule = this.generationRules.find((generationRule) => generationRule.cellType === adjacentCell.type);
+        if (rule) {
+            switch (direction) {
+                case 'up':
+                    // return the duplicate of the rule.down array
+                    return rule.down.slice();
+                case 'right':
+                    return rule.left.slice();
+                case 'down':
+                    return rule.up.slice();
+                case 'left':
+                    return rule.right.slice();
+            }
+        }
+        return [];
+    }
+
+
+
 }
