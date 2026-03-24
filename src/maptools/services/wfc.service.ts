@@ -161,7 +161,7 @@ export class WfcService {
             // calculate entropy map for each cell
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
             console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
-            // find empty cell with least entropy
+            // find empty cell with the least entropy
             let leastEntropyCell: LeastEntropyCell = null as any;
             try {
                 leastEntropyCell = this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
@@ -170,7 +170,7 @@ export class WfcService {
                 console.log('Exception caught: map is stuck');
             }
             if (leastEntropyCell && leastEntropyCell.entropy > 0) {
-                // find adyacent cells of the selected empty cell
+                // find adjacent cells of the selected empty cell
                 const adjacentCells: AdjacentCells = this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
                 console.log(adjacentCells);
                 // TODO chose the cell type, basing on rules
@@ -263,23 +263,23 @@ export class WfcService {
      * @return {{up: Cell, right: Cell, down: Cell, left: Cell}} An object containing the adjacent cells (`up`, `right`, `down`, `left`). Missing directions will not be included if the cell is on a boundary or edge.
      */
     getAdjacentCells(x: number, y: number, width: number, height: number, cells: Cell[]): AdjacentCells {
-        const adyacentCells: AdjacentCells = {up: null, right: null, down: null, left: null} as any;
+        const adjacentCells: AdjacentCells = {up: null, right: null, down: null, left: null} as any;
         const cellOffset = y * width + x;
         console.log({cellOffset});
         if (y > 0 && cellOffset > width - 1) {
-            adyacentCells.up = cells[cellOffset - width];
+            adjacentCells.up = cells[cellOffset - width];
         }
         if (x < width - 1 && cellOffset < cells.length - 1) {
-            adyacentCells.right = cells[cellOffset + 1];
+            adjacentCells.right = cells[cellOffset + 1];
         }
         if (y < height - 1 && cellOffset < cells.length - width) {
-            adyacentCells.down = cells[cellOffset + width];
+            adjacentCells.down = cells[cellOffset + width];
         }
         if (x > 0 && cellOffset > 0) {
-            adyacentCells.left = cells[cellOffset - 1];
+            adjacentCells.left = cells[cellOffset - 1];
         }
 
-        return adyacentCells;
+        return adjacentCells;
     }
 
 
@@ -324,7 +324,7 @@ export class WfcService {
      * @param {string} direction - The relative direction ('up', 'right', 'down', 'left') from the current cell.
      * @return {Array} An array of rules applicable to the adjacent cell in the specified direction. Returns an empty array if no rules match.
      */
-    getRulesToAdjacentCell(adjacentCell: Cell, direction: string) {
+    getRulesToAdjacentCell(adjacentCell: Cell, direction: string): Array<any> {
         const rule = this.generationRules.find((generationRule) => generationRule.cellType === adjacentCell.type);
         if (rule) {
             switch (direction) {
