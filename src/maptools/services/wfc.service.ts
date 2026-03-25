@@ -173,8 +173,8 @@ export class WfcService {
                 // find adjacent cells of the selected empty cell
                 const adjacentCells: AdjacentCells = this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
                 console.log(adjacentCells);
-                // TODO chose the cell type, basing on rules
-                const newCell: Cell = this.getCellFromRules(leastEntropyCell, adjacentCells, cells, terrain.width, terrain.height);
+                // chose the cell type, basing on rules
+                const newCell: Cell = this.resolveCell(leastEntropyCell, adjacentCells, cells, terrain.width, terrain.height, rnd);
                 // TODO if map is stuck, restart from the beginning
             }
         // copy terrain matrix in terrain cells
@@ -284,7 +284,7 @@ export class WfcService {
 
 
 
-    getCellFromRules(leastEntropyCell: LeastEntropyCell, adjacentCells: AdjacentCells, cells: Cell[], width: number, height: number): Cell {
+    resolveCell(leastEntropyCell: LeastEntropyCell, adjacentCells: AdjacentCells, cells: Cell[], width: number, height: number, rnd: RandomUtilities): Cell {
         let cell: Cell = null as any;
         let intersectionRules: WFCCellRule[] = [];
         let pristine: boolean = true;
@@ -301,13 +301,15 @@ export class WfcService {
                         intersectionRules = adjacentRules;
                         pristine = false;
                     } else {
-                        // TODO remove from intersectionRules all rules not in the rules just read
+                        // remove from intersectionRules all rules not in the rules just read
+                        this.removeMissingRules(intersectionRules, adjacentRules);
                     }
                 }
             }
         }
         if (intersectionRules.length > 0) {
-            // TODO select a weighted random rule from intersectionRules and return the cell type
+            // select a weighted random rule from intersectionRules and return the cell type
+            cell = this.getCellFromRules(intersectionRules, rnd);
         } else {
             // return void cell: map generation is stuck :-(
             cell = new Cell({x: leastEntropyCell.x, y: leastEntropyCell.y, type: CellType.Void});
@@ -340,6 +342,43 @@ export class WfcService {
             }
         }
         return [];
+    }
+
+
+    /**
+     * Removes rules from the provided list that are not present in the reference list.
+     *
+     * @param {WFCCellRule[]} rules - The list of rules to be filtered. Rules missing in the reference list will be removed from this array.
+     * @param {WFCCellRule[]} reference - The reference list of rules to compare against based on `cellType`.
+     * @return {void} This method does not return a value. The `rules` array is modified in place.
+     */
+    removeMissingRules(rules: WFCCellRule[], reference: WFCCellRule[]): void {
+        const referenceTypes = new Set(reference.map(r => r.cellType));
+        for (let i = rules.length - 1; i >= 0; i--) {
+            if (!referenceTypes.has(rules[i].cellType)) {
+                rules.splice(i, 1);
+            }
+        }
+    }
+
+
+    /**
+     * Determines a `Cell` based on the provided rules and randomness.
+     *
+     * @param {WFCCellRule[]} rules - The list of rules, where each rule contains a cell type and its associated probability.
+     * @param {RandomUtilities} rnd - A utility for generating random values.
+     * @return {Cell} A new `Cell` instance determined by the rules and random selection process.
+     */
+    getCellFromRules(rules: WFCCellRule[], rnd: RandomUtilities): Cell {
+        const total = rules.reduce((sum, r) => sum + r.probability, 0);
+        let pick = rnd.next() * total;
+        for (const rule of rules) {
+            pick -= rule.probability;
+            if (pick <= 0) {
+                return new Cell({x: 0, y: 0, type: rule.cellType});
+            }
+        }
+        return new Cell({x: 0, y: 0, type: rules[rules.length - 1].cellType});
     }
 
 
