@@ -91,22 +91,22 @@ export class WfcService {
                 up: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.25},
+                    { cellType: CellType.Mountain, probability: 0.10},
                 ],
                 right: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.25},
+                    { cellType: CellType.Mountain, probability: 0.10},
                 ],
                 down: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.25},
+                    { cellType: CellType.Mountain, probability: 0.10},
                 ],
                 left: [
                     { cellType: CellType.Hill, probability: 0.5},
                     { cellType: CellType.Grass, probability: 0.25},
-                    { cellType: CellType.Mountain, probability: 0.25},
+                    { cellType: CellType.Mountain, probability: 0.10},
                 ],
             }),
             new TerrainGenerationRule({
