@@ -4,28 +4,28 @@ import {RandomUtilities} from "../utilities/random.utilities";
 import {CellType} from "../enums/cell-type.enum";
 import {TerrainGenerationRule} from "../models/terrain-generation-rule.model";
 import {MapUtilities} from "../utilities/map.utilities";
-import {TerrainUtilities} from "../utilities/terrain.utilities";
+
 
 
 class LeastEntropyCell {
-    x: number;
-    y: number;
-    entropy: number;
-    cell: Cell;
+    x!: number;
+    y!: number;
+    entropy!: number;
+    cell!: Cell;
 }
 
 
 class AdjacentCells {
-    up: Cell;
-    right: Cell;
-    down: Cell;
-    left: Cell;
+    up!: Cell;
+    right!: Cell;
+    down!: Cell;
+    left!: Cell;
 }
 
 
 class WFCCellRule {
-    cellType: CellType;
-    probability: number;
+    cellType!: CellType;
+    probability!: number;
 }
 
 
@@ -153,30 +153,38 @@ export class WfcService {
             }
         }
         // select a random starting point
-        const x = rnd.nextInt(0, terrain.width);
-        const y = rnd.nextInt(0, terrain.height);
-        // place a random cell
-        cells[y * terrain.width + x].type = rnd.nextEnum(CellType);
-        // TODO while map incomplete and map not stuck
+        const startX = rnd.nextInt(0, terrain.width - 1);
+        const startY = rnd.nextInt(0, terrain.height - 1);
+        // place a random non-void cell
+        const startingTypes = this.generationRules.map(r => r.cellType);
+        cells[startY * terrain.width + startX].type = startingTypes[rnd.nextInt(0, startingTypes.length - 1)];
+
+        let stuck = false;
+        while (!stuck && cells.some(c => c.type === CellType.Void)) {
             // calculate entropy map for each cell
             const entropyMap = this.generateEntropyMap(terrain.width, terrain.height, cells);
-            console.log(TerrainUtilities.matrixToString(entropyMap, terrain.width, terrain.height));
             // find empty cell with the least entropy
             let leastEntropyCell: LeastEntropyCell = null as any;
             try {
                 leastEntropyCell = this.getLeastEntropyCell(terrain.width, terrain.height, entropyMap, cells);
-                console.log(leastEntropyCell);
             } catch (e) {
-                console.log('Exception caught: map is stuck');
+                stuck = true;
+                break;
             }
-            if (leastEntropyCell && leastEntropyCell.entropy > 0) {
+            if (leastEntropyCell) {
                 // find adjacent cells of the selected empty cell
                 const adjacentCells: AdjacentCells = this.getAdjacentCells(leastEntropyCell.x, leastEntropyCell.y, terrain.width, terrain.height, cells);
-                console.log(adjacentCells);
-                // chose the cell type, basing on rules
+                // choose the cell type, basing on rules
                 const newCell: Cell = this.resolveCell(leastEntropyCell, adjacentCells, cells, terrain.width, terrain.height, rnd);
-                // TODO if map is stuck, restart from the beginning
+                if (newCell.type === CellType.Void) {
+                    stuck = true;
+                } else {
+                    cells[leastEntropyCell.y * terrain.width + leastEntropyCell.x] = newCell;
+                }
+            } else {
+                stuck = true;
             }
+        }
         // copy terrain matrix in terrain cells
         terrain.cells = cells;
     }
@@ -265,7 +273,6 @@ export class WfcService {
     getAdjacentCells(x: number, y: number, width: number, height: number, cells: Cell[]): AdjacentCells {
         const adjacentCells: AdjacentCells = {up: null, right: null, down: null, left: null} as any;
         const cellOffset = y * width + x;
-        console.log({cellOffset});
         if (y > 0 && cellOffset > width - 1) {
             adjacentCells.up = cells[cellOffset - width];
         }
@@ -284,38 +291,35 @@ export class WfcService {
 
 
 
-    resolveCell(leastEntropyCell: LeastEntropyCell, adjacentCells: AdjacentCells, cells: Cell[], width: number, height: number, rnd: RandomUtilities): Cell {
-        let cell: Cell = null as any;
+    resolveCell(leastEntropyCell: LeastEntropyCell, adjacentCells: AdjacentCells, _cells: Cell[], _width: number, _height: number, rnd: RandomUtilities): Cell {
         let intersectionRules: WFCCellRule[] = [];
-        let pristine: boolean = true;
-        // for each adajcent cell
-        for (const key in adjacentCells) {
+        let pristine = true;
+        // for each adjacent cell
+        for (const key of Object.keys(adjacentCells) as Array<keyof AdjacentCells>) {
             const adjacentCell: Cell = adjacentCells[key];
-            // if adjacent cell is not null
-            if (adjacentCell && adjacentCell.cellType != CellType.Void) {
+            // if adjacent cell is assigned
+            if (adjacentCell && adjacentCell.type !== CellType.Void) {
                 // list all rules toward the leastEntropyCell
-                let adjacentRules: WFCCellRule[] = this.getRulesToAdjacentCell(adjacentCell, key);
-                if (intersectionRules.length === 0) {
-                    if (pristine) {
-                        // copy all rules to intersectionRules
-                        intersectionRules = adjacentRules;
-                        pristine = false;
-                    } else {
-                        // remove from intersectionRules all rules not in the rules just read
-                        this.removeMissingRules(intersectionRules, adjacentRules);
-                    }
+                const adjacentRules: WFCCellRule[] = this.getRulesToAdjacentCell(adjacentCell, key);
+                if (pristine) {
+                    // copy all rules to intersectionRules
+                    intersectionRules = adjacentRules;
+                    pristine = false;
+                } else {
+                    // remove from intersectionRules all rules not present in adjacentRules
+                    this.removeMissingRules(intersectionRules, adjacentRules);
                 }
             }
         }
         if (intersectionRules.length > 0) {
-            // select a weighted random rule from intersectionRules and return the cell type
-            cell = this.getCellFromRules(intersectionRules, rnd);
-        } else {
-            // return void cell: map generation is stuck :-(
-            cell = new Cell({x: leastEntropyCell.x, y: leastEntropyCell.y, type: CellType.Void});
+            // select a weighted random rule from intersectionRules and return the cell
+            const cell = this.getCellFromRules(intersectionRules, rnd);
+            cell.x = leastEntropyCell.x;
+            cell.y = leastEntropyCell.y;
+            return cell;
         }
-
-        return cell;
+        // return void cell: map generation is stuck :-(
+        return new Cell({x: leastEntropyCell.x, y: leastEntropyCell.y, type: CellType.Void});
     }
 
 
